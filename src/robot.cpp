@@ -48,7 +48,7 @@ void robot_t::odometry(void)
 
   // Estimate robot speed
   ve = (v1e + v2e) / 2;
-  we = (v2e - v1e) / wheel_dist;
+  we = (v1e - v2e) / wheel_dist;
   
   // Estimate the distance and the turn angle
   ds = ve * dt;

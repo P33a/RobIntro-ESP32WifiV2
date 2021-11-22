@@ -80,11 +80,12 @@ IRLine_t IRLine;
 hw_timer_t * timer_enc = NULL;
 
 PID_t PID1, PID2;
-#define ENC1_A 19
-#define ENC1_B 23
+#define ENC1_A 27
+#define ENC1_B 14
 
-#define ENC2_A 27
-#define ENC2_B 14
+#define ENC2_A 19
+#define ENC2_B 23
+
 
 //#define SOLENOID 26
 
@@ -141,10 +142,10 @@ void setMotorPWM(Adafruit_DCMotor* M, int new_PWM, int enable = 1)
   if (enable) {
     if (new_PWM >= 0) {
       M->setSpeed(new_PWM);
-      M->run(FORWARD); 
+      M->run(BACKWARD); 
     } else {
       M->setSpeed(abs(new_PWM));
-      M->run(BACKWARD);
+      M->run(FORWARD);
     }
   } else {
     M->run(RELEASE);
@@ -340,8 +341,8 @@ void setup()
   // Configure motor Drive
   AFMS.begin();  // create with the default frequency 1.6KHz
  
-  M1 = AFMS.getMotor(1);
-  M2 = AFMS.getMotor(2);
+  M1 = AFMS.getMotor(2);
+  M2 = AFMS.getMotor(1);
   
   //M1->setSpeed(100);
   //M1->run(BACKWARD); 
