@@ -52,6 +52,8 @@ class robot_t {
 
   float dt;
   float v, w;
+  float v_req, w_req;
+  float dv_max, dw_max;
   byte solenoid_state;  
 
   float r1, r2, b;
@@ -59,8 +61,8 @@ class robot_t {
   float wheel_dist;
   
   float v1ref, v2ref;
-  int v1_PWM, v2_PWM;
-  int req1_PWM, req2_PWM;
+  int PWM_1, PWM_2;
+  int PWM_1_req, PWM_2_req;
   control_mode_t control_mode;
   int T1, T2;
   

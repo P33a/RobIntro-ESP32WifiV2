@@ -34,6 +34,8 @@ robot_t::robot_t()
 {
   pulses_to_meters = 0.0000532;
   wheel_dist = 0.13;
+  dv_max = 5;
+  dw_max = 10;
 }
 
 void robot_t::odometry(void)

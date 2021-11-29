@@ -1,6 +1,9 @@
 #include <Arduino.h>
 #include "proj_types.h"
 #include "robot.h"
+#include "IRline.h"
+
+extern IRLine_t IRLine;
 
 void control(robot_t& robot)
 {
@@ -17,18 +20,25 @@ void control(robot_t& robot)
     // Actions in each state
     if (robot.state == 0) {
       robot.setRobotVW(0, 0);
- 
+  
+    } else if (robot.state == 100) {
+      robot.v_req = 0.1;
+      robot.w_req = 4 * IRLine.IR_values[4] / 1024.0 
+                  + 2 * IRLine.IR_values[3] / 1024.0
+                  - 2 * IRLine.IR_values[1] / 1024.0
+                  - 4 * IRLine.IR_values[0] / 1024.0;
+
     } else if (robot.state == 200) {
-      robot.v1_PWM = 0;
-      robot.v2_PWM = 0;
+      robot.PWM_1 = 0;
+      robot.PWM_2 = 0;
 
     } else if (robot.state == 201) {
-      robot.v1_PWM = robot.req1_PWM;
-      robot.v2_PWM = robot.req2_PWM;
+      robot.PWM_1 = robot.PWM_1_req;
+      robot.PWM_2 = robot.PWM_2_req;
     
     } else if (robot.state == 202) {
-      robot.v1_PWM = robot.req1_PWM;
-      robot.v2_PWM = robot.req2_PWM;      
+      robot.PWM_1 = robot.PWM_1_req;
+      robot.PWM_2 = robot.PWM_2_req;      
     }
 
 }

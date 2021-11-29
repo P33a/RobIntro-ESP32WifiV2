@@ -418,6 +418,9 @@ void setup()
   robot.r1 = 0.065 / 2;
   robot.r2 = 0.065 / 2;
 
+  robot.dv_max = 5 * robot.dt;  // Linear velocity change per control period
+  robot.dw_max = 10 * robot.dt; // Angular velocity change per control period
+
   robot.state = 200;
 }
 
@@ -487,8 +490,8 @@ void process_serial_packet(char channel, uint32_t value, channels_t& obj)
    robot.setState(value);
 
  } else if (channel == 'O') {  // Set Requested PWM
-   robot.req1_PWM = int16_t((value >> 16) & 0xFFFF);
-   robot.req2_PWM = int16_t((value >> 0) & 0xFFFF);
+   robot.PWM_1_req = int16_t((value >> 16) & 0xFFFF);
+   robot.PWM_2_req = int16_t((value >> 0) & 0xFFFF);
 
  } else if (channel == 'T') {  // Set general parameters T1 and T2
    robot.T1 = (value >> 16) & 0xFFFF;
@@ -498,8 +501,10 @@ void process_serial_packet(char channel, uint32_t value, channels_t& obj)
    PID1.Kp = val.f;
    PID2.Kp = val.f;
  } else if (channel == 'i') { // Set PID parameter
-   PID1.Se = PID1.Se * PID1.Ki / val.f;
-   PID2.Se = PID2.Se * PID2.Ki / val.f;
+   if (fabs(val.f) > 1e-2 ) {
+     PID1.Se = PID1.Se * PID1.Ki / val.f;
+     PID2.Se = PID2.Se * PID2.Ki / val.f;
+   }
    PID1.Ki = val.f;
    PID2.Ki = val.f;
  } else if (channel == 'm') { // Set PID parameter
@@ -593,14 +598,23 @@ void real_loop(void)
     LastTouchSwitch = TouchSwitch;
     TouchSwitch = readTouchSwitch();
 
-    IRLine.calcIRLineEdgeLeft();
-    IRLine.calcIRLineEdgeRight();
-    IRLine.calcCrosses();
+    //IRLine.calcIRLineEdgeLeft();
+    //IRLine.calcIRLineEdgeRight();
+    //IRLine.calcCrosses();
 
     robot.odometry();
     control(robot);
 
     setSolenoidState(robot.solenoid_state);
+
+    float dv = robot.v_req - robot.v;
+    dv = constrain(dv, -robot.dv_max, robot.dv_max);
+    robot.v += dv;
+
+    float dw = robot.w_req - robot.w;
+    dw = constrain(dw, -robot.dw_max, robot.dw_max);
+    robot.w += dw;
+
 
     robot.v1ref = robot.v + robot.w * robot.wheel_dist / 2;
     robot.v2ref = robot.v - robot.w * robot.wheel_dist / 2;
@@ -612,17 +626,17 @@ void real_loop(void)
     else robot.control_mode = cm_pid;
 
     if (robot.control_mode == cm_pid) {
-      robot.v1_PWM = 0;
-      robot.v2_PWM = 0;      
+      robot.PWM_1 = 0;
+      robot.PWM_2 = 0;      
 
-      if (robot.v1ref != 0) robot.v1_PWM = PID1.calc(robot.v1ref, robot.v1e);
+      if (robot.v1ref != 0) robot.PWM_1 = PID1.calc(robot.v1ref, robot.v1e);
       else PID1.Se = 0;
 
-      if (robot.v2ref != 0) robot.v2_PWM = PID2.calc(robot.v2ref, robot.v2e);
+      if (robot.v2ref != 0) robot.PWM_2 = PID2.calc(robot.v2ref, robot.v2e);
       else PID2.Se = 0;
     }
 
-    setMotorsPWM(robot.v1_PWM, robot.v2_PWM);
+    setMotorsPWM(robot.PWM_1, robot.PWM_2);
     //setMotorsPWM(50, 150);
 
     IPAddress ip = WiFi.localIP();
@@ -630,7 +644,7 @@ void real_loop(void)
     serial_channels.send('i', ip[0], ip[1], ip [2], ip[3]);
     
     udp_channels.send('I', encodeIRSensors());
-    udp_channels.send('U', robot.v1_PWM, robot.v2_PWM);
+    udp_channels.send('U', robot.PWM_1, robot.PWM_2);
     udp_channels.send('R', robot.enc1, robot.enc2);
     udp_channels.send('S', robot.Senc1, robot.Senc2);
     udp_channels.send('T', robot.T1, robot.T2);
